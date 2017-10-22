@@ -1,0 +1,82 @@
+[
+  {
+    "city": "北京",
+    "code": "bj"
+  },
+  {
+    "city": "廊坊",
+    "code": "lf"
+  },
+  {
+    "city": "成都",
+    "code": "cd"
+  },
+  {
+    "city": "重庆",
+    "code": "cq"
+  },
+  {
+    "city": "长沙",
+    "code": "cs"
+  },
+  {
+    "city": "南京",
+    "code": "nj"
+  },
+  {
+    "city": "大连",
+    "code": "dl"
+  },
+  {
+    "city": "东莞",
+    "code": "dg"
+  },
+  {
+    "city": "青岛",
+    "code": "qd"
+  },
+  {
+    "city": "佛山",
+    "code": "fs"
+  },
+  {
+    "city": "深圳",
+    "code": "sz"
+  },
+  {
+    "city": "沈阳",
+    "code": "sy"
+  },
+  {
+    "city": "广州",
+    "code": "gz"
+  },
+  {
+    "city": "天津",
+    "code": "tj"
+  },
+  {
+    "city": "杭州",
+    "code": "hz"
+  },
+  {
+    "city": "武汉",
+    "code": "wh"
+  },
+  {
+    "city": "济南",
+    "code": "jn"
+  },
+  {
+    "city": "厦门",
+    "code": "xm"
+  },
+  {
+    "city": "上海",
+    "code": "sh"
+  },
+  {
+    "city": "苏州",
+    "code": "su"
+  }
+]
