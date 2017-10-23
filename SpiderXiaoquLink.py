@@ -5,6 +5,7 @@
 # @File : SpiderXiaoquLink.py
 # @Software : PyCharm
 # 爬取小区详情链接，查询国小区区域链接表：quanguo_xiaoqu_root_url中flag为0的URL进行爬取，爬取完成后flag置1
+from __future__ import division
 import json
 import random
 import re
@@ -50,7 +51,10 @@ class spider_area(object):
             flag = line[4]
             print line[0],line[1],line[2],line[3]
             if flag == 0:
-                spider_area.spider_list_url(city,area,url,table_name)
+                if city == '上海'.decode('utf-8') or city == '苏州'.decode('utf-8'):
+                    spider_area.spider_list_url_special(city,area,url,table_name)
+                else:
+                    spider_area.spider_list_url(city,area,url,table_name)
         conn.close()
 
     def spider_list_url(self,city,area,url,table_name):
@@ -99,6 +103,73 @@ class spider_area(object):
                                     content = "'%s','%s','%s','%s','%s','%s'" % (area_name,price,city,area,detail_url,tag_list)
                                     if area_name is not None and price is not None and detail_url is not None and tag_list is not None:
                                         cur.execute(' INSERT INTO %s(area_name,price,city,area,detail_url,tag_list) VALUES(%s)'%(table_name,content))
+                                        conn.commit()
+                                except Exception,e:
+                                    print e.message
+        except Exception,e:
+            # 非正常退出程序，则设置标志位flag为FALSE，下次重新抽取
+            flag = False
+            print e.message
+        finally:
+            # 正常结束程序，则更新root表标志位1
+            if flag is True:
+                cur.execute("UPDATE quanguo_xiaoqu_root_url SET flag=1 WHERE data_table = '%s'" % table_name)
+            conn.commit()
+            conn.close()
+
+    def spider_list_url_special(self,city,area,url,table_name):
+        user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:56.0) Gecko/20100101 Firefox/56.0"
+        # proxies = {"https": "http://117.95.31.73:2671"}
+        # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)],proxies=proxies)
+        r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])
+        soup = BeautifulSoup(r.text,'lxml',from_encoding='utf-8')
+        conn = MySQLdb.connect(host='localhost', user='root', passwd='123456', db='spider', port=3306, charset='utf8')
+        cur = conn.cursor()
+        cur.execute('drop table if EXISTS %s'%table_name)
+        cur.execute('CREATE TABLE %s(area_name VARCHAR(100) character set utf8,price VARCHAR(20) DEFAULT NULL ,longtitude VARCHAR(50) DEFAULT NULL ,latitude VARCHAR(50) DEFAULT NULL ,city VARCHAR(20) character set utf8 ,area VARCHAR(20) character set utf8 ,tag_list VARCHAR(100) character set utf8 DEFAULT NULL ,detail_url VARCHAR(50) DEFAULT NULL ,flag INT DEFAULT 0)'%table_name)
+
+        # 爬取分页数据列表
+        flag = True
+        try:
+            # 遍历大区下小区
+            for child in soup.find(class_="option-list sub-option-list gio_plate").find_all("a"):
+                if child["class"][0] != "on":
+                    child_url = urlparse.urljoin(url,child['href'])
+                    #print child_url
+                    r = requests.get(child_url, headers=hds[random.randint(0, len(hds) - 1)])
+                    soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
+                    # 通过观察页面，爬取总页数比较困难，可以爬取总房产数，与每页显示房产数求余，算出总页数；通过观察发现，每页显示总页数为20
+                    # 找到的房源总数
+                    house_num = int(soup.find(class_="list-head clear").find_all("h2")[0].find_all("span")[0].string)
+                    if house_num % 20 == 0:
+                        page_num = int(house_num/20)
+                    else:
+                        page_num = int((house_num/20)+1)
+                    # print house_num,str(house_num/20),page_num
+                    # 拼接单个区域下的子页链接：如上海市-黄埔区-北蔡[1-12]页链接
+                    for i in range(page_num):
+                        parent_url = child_url[0:len(child_url)-2]
+                        link = parent_url+"d%srs"%(i+1)
+                        r = requests.get(link, headers=hds[random.randint(0, len(hds) - 1)])
+                        soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
+                        if len(soup.find_all("div",class_="info-panel")) > 0:
+                            for detail in soup.find_all("div",class_="info-panel"):
+                                try:
+                                    area_name = detail.find("h2").find("a").string
+                                    fangchan_url = detail.find("h2").find("a")['href']
+                                    detail_url = urlparse.urljoin(link,fangchan_url)
+                                    price = detail.find(class_="price").find("span").string
+                                    if detail.find(class_='fang-subway-ex') is not None:
+                                        tag_list = detail.find(class_='fang-subway-ex').find("span").string
+                                    else:
+                                        tag_list = ""
+                                    print area_name,price.strip(),detail_url,tag_list
+                                    # 数据存入该区对应数据库
+                                    content = "'%s','%s','%s','%s','%s','%s'" % (area_name, price, city, area, detail_url, tag_list)
+                                    if area_name is not None and price is not None and detail_url is not None and tag_list is not None:
+                                        cur.execute(
+                                            ' INSERT INTO %s(area_name,price,city,area,detail_url,tag_list) VALUES(%s)' % (
+                                            table_name, content))
                                         conn.commit()
                                 except Exception,e:
                                     print e.message

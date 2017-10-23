@@ -62,7 +62,6 @@ class spider_root_area(object):
     '''
     爬取大区域链接：上海／苏州定制版
     '''
-
     def spider_url_area_special(self, url, city, code):
         try:
             # proxies = {"https": "http://115.216.230.209:3936"}
@@ -89,7 +88,6 @@ class spider_root_area(object):
     '''
     爬取可爬地市的所有区域链接，生成区域数据存储表
     '''
-
     def spider_url_area_ll(self):
         try:
             conn = MySQLdb.connect(host='localhost', user='root', passwd='123456', db='spider', port=3306,
