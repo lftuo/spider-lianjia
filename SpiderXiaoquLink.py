@@ -126,7 +126,7 @@ class spider_area(object):
         conn = MySQLdb.connect(host='localhost', user='root', passwd='123456', db='spider', port=3306, charset='utf8')
         cur = conn.cursor()
         cur.execute('drop table if EXISTS %s'%table_name)
-        cur.execute('CREATE TABLE %s(area_name VARCHAR(100) character set utf8,price VARCHAR(20) DEFAULT NULL ,longtitude VARCHAR(50) DEFAULT NULL ,latitude VARCHAR(50) DEFAULT NULL ,city VARCHAR(20) character set utf8 ,area VARCHAR(20) character set utf8 ,tag_list VARCHAR(100) character set utf8 DEFAULT NULL ,detail_url VARCHAR(50) DEFAULT NULL ,flag INT DEFAULT 0)'%table_name)
+        cur.execute('CREATE TABLE %s(area_name VARCHAR(100) character set utf8,price VARCHAR(20) DEFAULT NULL ,longtitude VARCHAR(50) DEFAULT NULL ,latitude VARCHAR(50) DEFAULT NULL ,city VARCHAR(100) character set utf8 ,area VARCHAR(100) character set utf8 ,tag_list VARCHAR(100) character set utf8 DEFAULT NULL ,detail_url VARCHAR(100) DEFAULT NULL ,flag INT DEFAULT 0)'%table_name)
 
         # 爬取分页数据列表
         flag = True
@@ -163,16 +163,17 @@ class spider_area(object):
                                         tag_list = detail.find(class_='fang-subway-ex').find("span").string
                                     else:
                                         tag_list = ""
-                                    print area_name,price.strip(),detail_url,tag_list
+                                    print area_name.strip(),price.strip(),detail_url.strip(),tag_list.strip()
                                     # 数据存入该区对应数据库
-                                    content = "'%s','%s','%s','%s','%s','%s'" % (area_name, price, city, area, detail_url, tag_list)
+                                    content = "'%s','%s','%s','%s','%s','%s'" % (area_name.strip(),price.strip(),city,area,detail_url.strip(),tag_list.strip())
                                     if area_name is not None and price is not None and detail_url is not None and tag_list is not None:
                                         cur.execute(
                                             ' INSERT INTO %s(area_name,price,city,area,detail_url,tag_list) VALUES(%s)' % (
                                             table_name, content))
                                         conn.commit()
                                 except Exception,e:
-                                    print e.message
+                                    print e
+
         except Exception,e:
             # 非正常退出程序，则设置标志位flag为FALSE，下次重新抽取
             flag = False

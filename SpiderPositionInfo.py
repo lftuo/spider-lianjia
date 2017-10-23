@@ -46,6 +46,18 @@ class spider_position_info(object):
             return longitude, latitude
             # 更新数据库经纬度信息
 
+    # 解析经纬度：为上海、苏州量身定做
+    def spider_position_info_special(self, url):
+        # proxies = {"https": "125.67.70.46:2132"}
+        # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)], proxies=proxies)
+        r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])
+        # print r.text
+        soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
+        longitude = soup.find(class_="actshowMap")["xiaoqu"].split(",")[0].split("[")[1]
+        latitude = soup.find(class_="actshowMap")["xiaoqu"].split(",")[1]
+        print longitude,latitude
+        return longitude, latitude
+
     def update_db(self):
         conn = MySQLdb.connect(host='localhost', user='root', passwd='123456', db='spider', port=3306, charset='utf8')
         cur = conn.cursor()
@@ -55,16 +67,23 @@ class spider_position_info(object):
             table_name = line[0]
             #print table_name
             #print '-------------------------------------'
-            cur.execute('select detail_url from %s WHERE flag = 0'%table_name)
-            urls = cur.fetchall()
-            for url in urls:
-                location = position.spider_position_info(url[0])
+            cur.execute('select city,detail_url from %s WHERE flag = 0'%table_name)
+            res = cur.fetchall()
+            for line in res:
+                city = line[0]
+                url = line[1]
+                if city == '上海'.decode('utf-8') or city == '苏州'.decode('utf-8'):
+                    location = position.spider_position_info_special(url)
+                else:
+                    location = position.spider_position_info(url)
                 if len(location) == 2:
                     longitude = location[0]
                     latitude = location[1]
-                    print table_name,longitude,latitude,url[0]
-                    cur.execute("update %s set longtitude = '%s',latitude = '%s',flag = 1 WHERE detail_url = '%s'"%(table_name,longitude,latitude,url[0]))
+                    print table_name,longitude,latitude,url
+                    cur.execute("update %s set longtitude = '%s',latitude = '%s',flag = 1 WHERE detail_url = '%s'"%(table_name,longitude,latitude,url))
                     conn.commit()
+
 if __name__ == '__main__':
     position = spider_position_info()
-    position.update_db()
+    #position.update_db()
+    position.spider_position_info_special('http://su.lianjia.com/xiaoqu/2311052589433.html')
