@@ -4,10 +4,12 @@
 # @Time : 2017-10-12 16:25:10
 # @File : SpiderPositionInfo.py
 # @Software : PyCharm
+# 爬取小区经纬度信息：查询全国小区区域链接表：quanguo_xiaoqu_root_url中flag为1的行中data_table字段，获取该字段后对该字段中记录的表格进行经纬度爬取
 import random
 import re
 import sqlite3
 
+import MySQLdb
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -31,11 +33,9 @@ hds=[{'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) 
 class spider_position_info(object):
     # 解析经纬度
     def spider_position_info(self, url):
-        user_agent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:56.0) Gecko/20100101 Firefox/56.0"
-        headers = {'User-Agent': user_agent}
-        proxies = {"https": "125.67.70.46:2132"}
-        r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)], proxies=proxies)
-        #r = requests.get(url, headers=headers)
+        #proxies = {"https": "125.67.70.46:2132"}
+        #r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)], proxies=proxies)
+        r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)])
         # print r.text
         soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
         details = soup.find_all(text=re.compile("resblockPosition"))
@@ -46,34 +46,25 @@ class spider_position_info(object):
             return longitude, latitude
             # 更新数据库经纬度信息
 
-    def update_db(self, tablename):
-        conn = sqlite3.connect('E:/tuotuo/dbdata/gz_lianjia_link.db')
-        # 创建sqlite数据库
+    def update_db(self):
+        conn = MySQLdb.connect(host='localhost', user='root', passwd='123456', db='spider', port=3306, charset='utf8')
         cur = conn.cursor()
-        cur.execute(' SELECT * FROM (%s)' % tablename)
-        res = cur.fetchall()
-        try:
-            i = 0
-            for line in res:
-                try:
-                    if line[6] == 0:
-                        url = line[3]
-                        location = position.spider_position_info(url)
-                        if len(location) == 2:
-                            longitude = location[0]
-                            latitude = location[1]
-                            print line[0], url, longitude, latitude
-                            # 刷新数据库经纬度信息
-                            cur.execute(
-                                'UPDATE gz_lianjia_link_panyu SET longitude = ?,latitude = ?,flag = 1 WHERE flag == 0 AND detail_url = ?',
-                                (longitude, latitude, url))
-                            conn.commit()
-                except Exception, e:
-                    print e.message
-        except Exception, e:
-            print e.message
-        finally:
-            conn.close()
+        cur.execute('select data_table from quanguo_xiaoqu_root_url WHERE flag = 1')
+        lines = cur.fetchall()
+        for line in lines:
+            table_name = line[0]
+            #print table_name
+            #print '-------------------------------------'
+            cur.execute('select detail_url from %s WHERE flag = 0'%table_name)
+            urls = cur.fetchall()
+            for url in urls:
+                location = position.spider_position_info(url[0])
+                if len(location) == 2:
+                    longitude = location[0]
+                    latitude = location[1]
+                    print table_name,longitude,latitude,url[0]
+                    cur.execute("update %s set longtitude = '%s',latitude = '%s',flag = 1 WHERE detail_url = '%s'"%(table_name,longitude,latitude,url[0]))
+                    conn.commit()
 if __name__ == '__main__':
     position = spider_position_info()
-    position.update_db('gz_lianjia_link_panyu')
+    position.update_db()
