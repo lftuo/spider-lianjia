@@ -6,35 +6,37 @@
 # @Software : PyCharm
 # 爬取小区详情链接，查询国小区区域链接表：quanguo_xiaoqu_root_url中flag为0的URL进行爬取，爬取完成后flag置1
 from __future__ import division
+
 import json
 import random
 import re
-import sqlite3
-import MySQLdb
-import requests
-from bs4 import BeautifulSoup
 import urlparse
 
-hds=[{'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'},\
-    {'User-Agent':'Mozilla/5.0 (Windows NT 6.2) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.12 Safari/535.11'},\
-    {'User-Agent':'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/6.0)'},\
-    {'User-Agent':'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0'},\
-    {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/44.0.2403.89 Chrome/44.0.2403.89 Safari/537.36'},\
-    {'User-Agent':'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50'},\
-    {'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50'},\
-    {'User-Agent':'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0'},\
-    {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'},\
-    {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'},\
-    {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11'},\
-    {'User-Agent':'Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11'},\
-    {'User-Agent':'Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11'}]
+import requests
+from bs4 import BeautifulSoup
+
+from util import Util
+
+hds=[{'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'}, \
+     {'User-Agent':'Mozilla/5.0 (Windows NT 6.2) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.12 Safari/535.11'}, \
+     {'User-Agent':'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/6.0)'}, \
+     {'User-Agent':'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0'}, \
+     {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/44.0.2403.89 Chrome/44.0.2403.89 Safari/537.36'}, \
+     {'User-Agent':'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50'}, \
+     {'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50'}, \
+     {'User-Agent':'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0'}, \
+     {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'}, \
+     {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'}, \
+     {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11'}, \
+     {'User-Agent':'Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11'}, \
+     {'User-Agent':'Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11'}]
 
 class spider_area(object):
     '''
     查询全国小区区域链接的数据，表名：quanguo_xiaoqu_root_url，按区域存储，每爬完一个区域，flag置1
     '''
     def spider_xiiaoqu_root_url(self):
-        conn = MySQLdb.connect(host='localhost', user='root', passwd='123456', db='spider', port=3306, charset='utf8')
+        conn = Util().get_db_conn()
         cur = conn.cursor()
         cur.execute('select * from quanguo_xiaoqu_root_url')
         lines = cur.fetchall()
@@ -57,14 +59,20 @@ class spider_area(object):
                     spider_area.spider_list_url(city,area,url,table_name)
         conn.close()
 
+    '''
+    获取小区详细房产信息
+    :param city:小区所在城市
+    :param area:小区所在区
+    :param url:小区所在大区URL
+    :param url:数据存储表名
+    '''
     def spider_list_url(self,city,area,url,table_name):
         user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:56.0) Gecko/20100101 Firefox/56.0"
         # proxies = {"https": "http://117.95.31.73:2671"}
         # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)],proxies=proxies)
-        print '---------------------------------------------'
         r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])
         soup = BeautifulSoup(r.text,'lxml',from_encoding='utf-8')
-        conn = MySQLdb.connect(host='localhost', user='root', passwd='123456', db='spider', port=3306, charset='utf8')
+        conn = Util().get_db_conn()
         cur = conn.cursor()
         cur.execute('drop table if EXISTS %s'%table_name)
         cur.execute('CREATE TABLE %s(area_name VARCHAR(100) character set utf8,price VARCHAR(20) DEFAULT NULL ,longtitude VARCHAR(50) DEFAULT NULL ,latitude VARCHAR(50) DEFAULT NULL ,city VARCHAR(20) character set utf8 ,area VARCHAR(20) character set utf8 ,tag_list VARCHAR(100) character set utf8 DEFAULT NULL ,detail_url VARCHAR(50) DEFAULT NULL ,flag INT DEFAULT 0)'%table_name)
@@ -117,13 +125,20 @@ class spider_area(object):
             conn.commit()
             conn.close()
 
+    '''
+    上海/苏州定制版:爬取房产详细链接
+    :param city:小区所在城市
+    :param area:小区所在区
+    :param url:小区所在大区URL
+    :param url:数据存储表名
+    '''
     def spider_list_url_special(self,city,area,url,table_name):
         user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:56.0) Gecko/20100101 Firefox/56.0"
         # proxies = {"https": "http://117.95.31.73:2671"}
         # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)],proxies=proxies)
         r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])
         soup = BeautifulSoup(r.text,'lxml',from_encoding='utf-8')
-        conn = MySQLdb.connect(host='localhost', user='root', passwd='123456', db='spider', port=3306, charset='utf8')
+        conn = Util().get_db_conn()
         cur = conn.cursor()
         cur.execute('drop table if EXISTS %s'%table_name)
         cur.execute('CREATE TABLE %s(area_name VARCHAR(100) character set utf8,price VARCHAR(20) DEFAULT NULL ,longtitude VARCHAR(50) DEFAULT NULL ,latitude VARCHAR(50) DEFAULT NULL ,city VARCHAR(100) character set utf8 ,area VARCHAR(100) character set utf8 ,tag_list VARCHAR(100) character set utf8 DEFAULT NULL ,detail_url VARCHAR(100) DEFAULT NULL ,flag INT DEFAULT 0)'%table_name)
@@ -155,10 +170,14 @@ class spider_area(object):
                         if len(soup.find_all("div",class_="info-panel")) > 0:
                             for detail in soup.find_all("div",class_="info-panel"):
                                 try:
+                                    # 获取小区名称
                                     area_name = detail.find("h2").find("a").string
+                                    # 获取小区详细URL
                                     fangchan_url = detail.find("h2").find("a")['href']
                                     detail_url = urlparse.urljoin(link,fangchan_url)
+                                    # 获取小区均价
                                     price = detail.find(class_="price").find("span").string
+                                    # 获取小区特点
                                     if detail.find(class_='fang-subway-ex') is not None:
                                         tag_list = detail.find(class_='fang-subway-ex').find("span").string
                                     else:
@@ -169,7 +188,7 @@ class spider_area(object):
                                     if area_name is not None and price is not None and detail_url is not None and tag_list is not None:
                                         cur.execute(
                                             ' INSERT INTO %s(area_name,price,city,area,detail_url,tag_list) VALUES(%s)' % (
-                                            table_name, content))
+                                                table_name, content))
                                         conn.commit()
                                 except Exception,e:
                                     print e

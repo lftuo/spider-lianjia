@@ -6,12 +6,12 @@
 # @Software : PyCharm
 # 合并所有的小区表：查询全国小区区域链接表：quanguo_xiaoqu_root_url中flag为1的行中data_table字段,
 #               合并data_table表单中的数据插入总表quanguo_xiaoqu_position_info
-import MySQLdb
+from util import Util
 
 
 class merge_tables(object):
     def merge(self):
-        conn = MySQLdb.connect(host='localhost', user='root', passwd='123456', db='spider', port=3306, charset='utf8')
+        conn = Util().get_db_conn()
         cur = conn.cursor()
         # 执行此函数一次，进行一次合并
         cur.execute('drop table if EXISTS quanguo_xiaoqu_position_info')
