@@ -22,14 +22,12 @@ class Util(object):
     '''
     def get_db_conn(self):
         config = self.read_config()
-        print config.get("MySQL","MYSQL_HOST")
         host_name = config.get("MySQL","MYSQL_HOST")
         db_name = config.get("MySQL","MYSQL_DBNAME")
         user_name = config.get("MySQL","MYSQL_USER")
         password = config.get("MySQL","MYSQL_PASSWD")
         port = int(config.get("MySQL","PORT"))
         charset = config.get("MySQL","CHARSET")
-        print host_name,db_name,user_name,password,port,charset
         conn = MySQLdb.connect(host=host_name, user=user_name, passwd=password, db=db_name, port=port, charset=charset)
         return conn
 

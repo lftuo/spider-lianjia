@@ -1,17 +1,19 @@
 #!/usr/bin/python
 # -*- coding:utf8 -*-
 # @Author : tuolifeng
-# @Time : 2017-10-23 13:22:33
-# @File : SpiderRootArea.py
+# @Time : 2017-10-12 16:25:10
+# @File : SpiderPositionInfo.py
 # @Software : PyCharm
-# 生成全国小区区域链接表：如南京、建邺；上海、浦东
-import json
+# 爬取小区经纬度信息：查询全国小区区域链接表：quanguo_xiaoqu_root_url中flag为1的行中data_table字段，获取该字段后对该字段中记录的表格进行经纬度爬取
+import logging
 import random
-import urlparse
+import re
+import sqlite3
 
-import bs4
+import MySQLdb
 import requests
 from bs4 import BeautifulSoup
+import time
 
 from util import Util
 
@@ -28,125 +30,54 @@ hds=[{'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) 
      {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11'}, \
      {'User-Agent':'Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11'}, \
      {'User-Agent':'Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11'}]
-class spider_root_area(object):
-    '''
-    取大区域链接：大众模板
-    :param url:小区链接
-    :param city:小区城市名称
-    :param code:小区网站英文代码
-    '''
-    def spider_url_area_normal(self, url, city, code):
-        try:
-            # proxies = {"https": "http://115.216.230.209:3936"}
-            # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)], proxies=proxies)
-            r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])
-            # print r.text
-        except Exception, e:
-            print e.message
-            return
-        if r.text is not None:
-            soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
-            for child in soup.find(class_="position").children:
-                try:
-                    if type(child.find("div")) == bs4.element.Tag:
-                        for link in child.find("div").find_all("a"):
-                            # 获取大区域链接
-                            area = link.string
-                            area_link = link['href']
-                            length = len(area_link.split("/"))
-                            area_name = area_link.split("/")[length - 2]
-                            new_url = urlparse.urljoin(url, area_link)
-                            table_name = "lianjia_%s_%s_position_info" % (code, area_name)
-                            # 将大区域信息插入mysql数据库
-                            print new_url, city, area, table_name
-                            spider.insert_xiaoqu_root_url(new_url, city, area, table_name)
-                except Exception, e:
-                    print e.message
-
-    '''
-    爬取大区域链接：上海／苏州定制版
-    :param url:小区链接
-    :param city:小区城市名称
-    :param code:小区网站英文代码
-    '''
-    def spider_url_area_special(self, url, city, code):
-        try:
-            # proxies = {"https": "http://115.216.230.209:3936"}
-            # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)], proxies=proxies)
-            r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])
-            # print r.text
-        except Exception, e:
-            print e.message
-            return
-        if r.text is not None:
-            soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
-            if len(soup.find("div", class_="option-list gio_district").find_all("a")) > 0:
-                for link in soup.find("div", class_="option-list gio_district").find_all("a"):
-                    class_ = link['class'][0]
-                    if class_ == "":
-                        area = link.string
-                        area_link = link['href']
-                        new_url = urlparse.urljoin(url, area_link)
-                        area_name = area_link.split("/")[2]
-                        table_name = "lianjia_%s_%s_position_info" % (code, area_name)
-                        print new_url, city, area, table_name
-                        spider.insert_xiaoqu_root_url(new_url, city, area, table_name)
-
-    '''
-    爬取可爬地市的所有区域链接，生成区域数据存储表
-    '''
-    def spider_url_area_ll(self):
-        try:
-            conn = Util().get_db_conn()
-            cur = conn.cursor()
-            cur.execute('drop table if EXISTS quanguo_xiaoqu_root_url')
-            cur.execute(
-                'CREATE TABLE quanguo_xiaoqu_root_url(city VARCHAR(20) character set utf8,area VARCHAR(20) character set utf8 ,url VARCHAR(50),data_table VARCHAR(50),flag INT DEFAULT 0)')
-            conn.commit()
-            conn.close()
-        except Exception, e:
-            print e.message
-            return
-
-        # 读取城市配置
-        citys = spider.read_city_json()
-        for city in citys:
-            '''
-            city['city']城市中文名称
-            city['code']城市英文简写
-            '''
-            url = "https://%s.lianjia.com/xiaoqu/rs/" % city['code']
-            # 爬取大区链接：上海／苏州采用不同模板
-            if city['code'] == "sh":
-                # print city['city'],city['code'],url
-                spider.spider_url_area_special(url, city['city'], city['code'])
-            elif city['code'] == "su":
-                url = "http://%s.lianjia.com/xiaoqu/rs/" % city['code']
-                # print city['city'], city['code'], url
-                spider.spider_url_area_special(url, city['city'], city['code'])
-            else:
-                spider.spider_url_area_normal(url, city['city'], city['code'])
-    def read_city_json(self):
-        with open('city.json') as json_file:
-            datas = json.load(json_file)
-            return datas
 
 
-    '''
-    存放全国小区区域链接的数据,表名：quanguo_xiaoqu_root_url
-    '''
-    def insert_xiaoqu_root_url(self, url, city, area, table_name):
-        # print url, city, area
+class spider_position_info(object):
+    # 解析经纬度
+    def spider_position_info(self, url):
+        r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)])
+        soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
+        details = soup.find_all(text=re.compile("resblockPosition"))
+        if len(details) > 0:
+            pattern = re.compile(r"(resblockPosition:')(\d+.\d+)(,)(\d+.\d+)'")
+            longitude = re.search(pattern, details[0]).group(2)
+            latitude = re.search(pattern, details[0]).group(4)
+            return longitude, latitude
+
+    # 解析经纬度：为上海、苏州量身定做
+    def spider_position_info_special(self, url):
+        r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])
+        soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
+        longitude = soup.find(class_="actshowMap")["xiaoqu"].split(",")[0].split("[")[1]
+        latitude = soup.find(class_="actshowMap")["xiaoqu"].split(",")[1]
+        return longitude, latitude
+
+    def update_db(self):
         conn = Util().get_db_conn()
         cur = conn.cursor()
-        # cur.execute('CREATE TABLE IF NOT EXISTS quanguo_xiaoqu_root_url(city VARCHAR(20) character set utf8,area VARCHAR(20) character set utf8 ,url VARCHAR(50),data_table VARCHAR(50),flag INT DEFAULT 0)')
-        data = "'%s','%s','%s','%s'" % (city, area, url, table_name)
-        # print data
-        cur.execute('insert into quanguo_xiaoqu_root_url (city,area,url,data_table) VALUES (%s)' % data);
-        conn.commit()
-        conn.close()
-
+        cur.execute('select data_table from quanguo_xiaoqu_root_url WHERE flag = 1')
+        lines = cur.fetchall()
+        for line in lines:
+            table_name = line[0]
+            cur.execute('select city,detail_url from %s WHERE flag = 0'%table_name)
+            res = cur.fetchall()
+            for line in res:
+                try:
+                    city = line[0]
+                    url = line[1]
+                    if city == '上海'.decode('utf-8') or city == '苏州'.decode('utf-8'):
+                        location = position.spider_position_info_special(url)
+                    else:
+                        location = position.spider_position_info(url)
+                    if len(location) == 2:
+                        longitude = location[0]
+                        latitude = location[1]
+                        print table_name,longitude,latitude,url
+                        cur.execute("update %s set longtitude = '%s',latitude = '%s',flag = 1 WHERE detail_url = '%s'"%(table_name,longitude,latitude,url))
+                        conn.commit()
+                except Exception,e:
+                    logging.exception(e)
 
 if __name__ == '__main__':
-    spider = spider_root_area()
-    spider.spider_url_area_ll()
+    position = spider_position_info()
+    position.update_db()
