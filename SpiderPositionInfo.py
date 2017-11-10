@@ -8,12 +8,9 @@
 import logging
 import random
 import re
-import sqlite3
 
-import MySQLdb
 import requests
 from bs4 import BeautifulSoup
-import time
 
 from util import Util
 
@@ -33,8 +30,12 @@ hds=[{'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) 
 
 
 class spider_position_info(object):
-    # 解析经纬度
     def spider_position_info(self, url):
+        '''
+        解析经纬度
+        :param url:房产详情页的URL
+        :return:
+        '''
         r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)])
         soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
         details = soup.find_all(text=re.compile("resblockPosition"))
@@ -44,8 +45,12 @@ class spider_position_info(object):
             latitude = re.search(pattern, details[0]).group(4)
             return longitude, latitude
 
-    # 解析经纬度：为上海、苏州量身定做
     def spider_position_info_special(self, url):
+        '''
+        解析经纬度：为上海、苏州量身定做
+        :param url: 房产详情页的URL
+        :return:
+        '''
         r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])
         soup = BeautifulSoup(r.text, 'lxml', from_encoding='utf-8')
         longitude = soup.find(class_="actshowMap")["xiaoqu"].split(",")[0].split("[")[1]
@@ -53,6 +58,10 @@ class spider_position_info(object):
         return longitude, latitude
 
     def update_db(self):
+        '''
+        更新小区详情数据中的经纬度表，查询全国小区大区表，获取小区详情数据表名，更新该表中的经纬度信息
+        :return:
+        '''
         conn = Util().get_db_conn()
         cur = conn.cursor()
         cur.execute('select data_table from quanguo_xiaoqu_root_url WHERE flag = 1')
