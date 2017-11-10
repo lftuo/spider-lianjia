@@ -32,10 +32,13 @@ hds=[{'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) 
      {'User-Agent':'Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11'}]
 
 class spider_area(object):
-    '''
-    查询全国小区区域链接的数据，表名：quanguo_xiaoqu_root_url，按区域存储，每爬完一个区域，flag置1
-    '''
+
     def spider_xiiaoqu_root_url(self):
+        '''
+        查询全国小区区域链接的数据，表名：quanguo_xiaoqu_root_url，按区域存储，每爬完一个区域，flag置1
+        :return:
+        '''
+
         conn = Util().get_db_conn()
         cur = conn.cursor()
         cur.execute('select * from quanguo_xiaoqu_root_url')
@@ -59,15 +62,16 @@ class spider_area(object):
                     spider_area.spider_list_url(city,area,url,table_name)
         conn.close()
 
-    '''
-    获取小区详细房产信息
-    :param city:小区所在城市
-    :param area:小区所在区
-    :param url:小区所在大区URL
-    :param url:数据存储表名
-    '''
     def spider_list_url(self,city,area,url,table_name):
-        user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:56.0) Gecko/20100101 Firefox/56.0"
+        '''
+        获取小区详细房产信息
+        :param city: 小区所在城市
+        :param area: 小区所在区
+        :param url:小区所在大区URL
+        :param table_name:数据存储表名
+        :return:
+        '''
+
         # proxies = {"https": "http://117.95.31.73:2671"}
         # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)],proxies=proxies)
         r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])
@@ -125,15 +129,17 @@ class spider_area(object):
             conn.commit()
             conn.close()
 
-    '''
-    上海/苏州定制版:爬取房产详细链接
-    :param city:小区所在城市
-    :param area:小区所在区
-    :param url:小区所在大区URL
-    :param url:数据存储表名
-    '''
+
     def spider_list_url_special(self,city,area,url,table_name):
-        user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:56.0) Gecko/20100101 Firefox/56.0"
+        '''
+        上海/苏州定制版:爬取房产详细链接
+        :param city: 小区所在城市
+        :param area: 小区所在区
+        :param url: 小区所在大区URL
+        :param table_name: 数据存储表名
+        :return:
+        '''
+
         # proxies = {"https": "http://117.95.31.73:2671"}
         # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)],proxies=proxies)
         r = requests.get(url, headers=hds[random.randint(0, len(hds) - 1)])

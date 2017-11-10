@@ -30,13 +30,16 @@ hds=[{'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) 
      {'User-Agent':'Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11'}, \
      {'User-Agent':'Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11'}]
 class spider_root_area(object):
-    '''
-    取大区域链接：大众模板
-    :param url:城市URL
-    :param city:城市名称
-    :param code:城市网站英文代码
-    '''
+
     def spider_url_area_normal(self, url, city, code):
+        '''
+        取大区域链接：大众模板
+        :param url: 城市URL
+        :param city: 城市名称
+        :param code: 城市网站英文代码
+        :return:
+        '''
+
         try:
             # proxies = {"https": "http://115.216.230.209:3936"}
             # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)], proxies=proxies)
@@ -67,13 +70,16 @@ class spider_root_area(object):
                 except Exception, e:
                     print e.message
 
-    '''
-    爬取大区域链接：上海／苏州定制版
-    :param url:城市URL
-    :param city:城市名称
-    :param code:城市网站英文代码
-    '''
+
     def spider_url_area_special(self, url, city, code):
+        '''
+        爬取大区域链接：上海／苏州定制版
+        :param url: 城市URL
+        :param city: 城市名称
+        :param code: 城市网站英文代码
+        :return:
+        '''
+
         try:
             # proxies = {"https": "http://115.216.230.209:3936"}
             # r = requests.get(url, headers=hds[random.randint(0,len(hds)-1)], proxies=proxies)
@@ -100,10 +106,12 @@ class spider_root_area(object):
                         # 将数据存储quanguo_xiaoqu_root_url表
                         spider.insert_xiaoqu_root_url(new_url, city, area, table_name)
 
-    '''
-    爬取可爬地市的所有区域链接，生成区域数据存储表
-    '''
     def spider_url_area_ll(self):
+        '''
+        爬取可爬地市的所有区域链接，生成区域数据存储表quanguo_xiaoqu_root_url
+        :return:
+        '''
+
         try:
             conn = Util().get_db_conn()
             cur = conn.cursor()
@@ -119,44 +127,40 @@ class spider_root_area(object):
         # 读取城市配置
         citys = spider.read_city_json()
         for city in citys:
-            '''
-            city['city']城市中文名称
-            city['code']城市英文简写
-            '''
+            # city['city']城市中文名称
+            # city['code']城市英文简写
             url = "https://%s.lianjia.com/xiaoqu/rs/" % city['code']
             # 爬取大区链接：上海／苏州采用不同模板
             if city['code'] == "sh":
-                # print city['city'],city['code'],url
                 spider.spider_url_area_special(url, city['city'], city['code'])
             elif city['code'] == "su":
                 url = "http://%s.lianjia.com/xiaoqu/rs/" % city['code']
-                # print city['city'], city['code'], url
                 spider.spider_url_area_special(url, city['city'], city['code'])
             else:
                 spider.spider_url_area_normal(url, city['city'], city['code'])
 
-    '''
-    读取爬虫需要爬取得配置文件city.json
-    '''
     def read_city_json(self):
+        '''
+        读取爬虫需要爬取得配置文件city.json
+        :return:
+        '''
+
         with open('conf/city.json') as json_file:
             datas = json.load(json_file)
             return datas
 
-    '''
-    存放全国小区区域链接的数据,表名：quanguo_xiaoqu_root_url
-    :param url:大区域URL
-    :param city:城市名称
-    :param area:城市区名称
-    :param table_name:数据存储表明
-    '''
     def insert_xiaoqu_root_url(self, url, city, area, table_name):
-        # print url, city, area
+        '''
+        :param url: 大区域URL
+        :param city:城市名称
+        :param area:城市区域名称
+        :param table_name:数据存储表明
+        :return:
+        '''
+
         conn = Util().get_db_conn()
         cur = conn.cursor()
-        # cur.execute('CREATE TABLE IF NOT EXISTS quanguo_xiaoqu_root_url(city VARCHAR(20) character set utf8,area VARCHAR(20) character set utf8 ,url VARCHAR(50),data_table VARCHAR(50),flag INT DEFAULT 0)')
         data = "'%s','%s','%s','%s'" % (city, area, url, table_name)
-        # print data
         cur.execute('insert into quanguo_xiaoqu_root_url (city,area,url,data_table) VALUES (%s)' % data);
         conn.commit()
         conn.close()
