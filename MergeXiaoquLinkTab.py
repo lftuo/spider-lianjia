@@ -17,7 +17,7 @@ class merge_tables(object):
         cur.execute('drop table if EXISTS quanguo_xiaoqu_position_info')
         # 创建总表
         cur.execute(
-            'CREATE TABLE quanguo_xiaoqu_position_info(area_name VARCHAR(100) character set utf8,price VARCHAR(20) DEFAULT NULL ,longtitude VARCHAR(50) DEFAULT NULL ,latitude VARCHAR(50) DEFAULT NULL ,city VARCHAR(20) character set utf8 ,area VARCHAR(20) character set utf8 ,tag_list VARCHAR(100) character set utf8 DEFAULT NULL ,detail_url VARCHAR(50) DEFAULT NULL ,flag INT DEFAULT 0)')
+            'CREATE TABLE quanguo_xiaoqu_position_info(area_name VARCHAR(100) character set utf8,price VARCHAR(20) DEFAULT NULL ,longtitude VARCHAR(50) DEFAULT NULL ,latitude VARCHAR(50) DEFAULT NULL ,city VARCHAR(20) character set utf8 ,area VARCHAR(20) character set utf8 ,tag_list VARCHAR(100) character set utf8 DEFAULT NULL ,detail_url TEXT ,flag INT DEFAULT 0)')
         conn.commit()
         cur.execute('select data_table from quanguo_xiaoqu_root_url WHERE flag = 1')
         res = cur.fetchall()
